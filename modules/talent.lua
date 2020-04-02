@@ -99,6 +99,12 @@ function TalentModule:Refresh()
 
   local iconSize = db.text.fontSize + db.general.barPadding
   local _, name, _ = GetSpecializationInfo(self.currentSpecID)
+  local lootName = ''
+  if self.currentLootSpecID == 0 then
+    lootName = name
+  else
+    _, lootName, _ = GetSpecializationInfoByID(self.currentLootSpecID)
+  end
 
   local textHeight = db.text.fontSize
   if artifactId > 0 then
@@ -113,7 +119,8 @@ function TalentModule:Refresh()
 
   self.specText:SetFont(xb:GetFont(textHeight))
   self.specText:SetTextColor(db.color.inactive.r, db.color.inactive.g, db.color.inactive.b, db.color.inactive.a)
-  self.specText:SetText(string.upper(name or ""))
+  local clID = self.currentSpecID .. '/' .. self.currentLootSpecID
+  self.specText:SetText(string.upper((name or "") .. '/' .. (lootName or clID)))
 
   if artifactId > 0 then
     self.specText:SetPoint('TOPLEFT', self.specIcon, 'TOPRIGHT', 5, 0)
@@ -251,18 +258,13 @@ function TalentModule:RegisterFrameEvents()
     end
     if button == 'LeftButton' then
       if not InCombatLockdown() then
-		if IsShiftKeyDown() then
-			if self.lootSpecPopup:IsVisible() then
-			  self.lootSpecPopup:Hide()
-			  if xb.db.profile.modules.tradeskill.showTooltip then
-				self:ShowTooltip()
-			  end
-			else
-			  self.specPopup:Hide()
-			  self:CreateLootSpecPopup()
-			  self.lootSpecPopup:Show()
-			end
-		else
+		if IsShiftKeyDown() then--按下Shift+左键
+      if not InCombatLockdown() then
+        if self.curArtifactId > 0 then
+          SocketInventoryItem(16)
+        end
+      end
+		else--按下左键
 			if self.specPopup:IsVisible() then
 			  self.specPopup:Hide()
 			  if xb.db.profile.modules.tradeskill.showTooltip then
@@ -278,10 +280,15 @@ function TalentModule:RegisterFrameEvents()
     end
 
     if button == 'RightButton' then
-      if not InCombatLockdown() then
-		if self.curArtifactId > 0 then
-			SocketInventoryItem(16)
-		end
+      if self.lootSpecPopup:IsVisible() then
+        self.lootSpecPopup:Hide()
+        if xb.db.profile.modules.tradeskill.showTooltip then
+        self:ShowTooltip()
+        end
+      else
+        self.specPopup:Hide()
+        self:CreateLootSpecPopup()
+        self.lootSpecPopup:Show()
       end
     end
   end)
@@ -552,9 +559,10 @@ function TalentModule:ShowTooltip()
 
   tooltip:AddLine(" ")
   tooltip:AddLine('|cFFFFFF00<'..L['Left-Click']..'>|r', "|cFFFFFFFF"..L['Set Specialization'].."|r")
-  tooltip:AddLine('|cFFFFFF00<'..SHIFT_KEY_TEXT.."+"..L['Left-Click']..'>|r', "|cFFFFFFFF"..L['Set Loot Specialization'].."|r")
+  tooltip:AddLine('|cFFFFFF00<'..L['Right-Click']..'>|r', "|cFFFFFFFF"..L['Set Loot Specialization'].."|r")
+  
   if self.curArtifactId > 0 then
-	tooltip:AddLine('|cFFFFFF00<'..L['Right-Click']..'>|r', "|cFFFFFFFF"..L['Open Artifact'].."|r")
+  tooltip:AddLine('|cFFFFFF00<'..SHIFT_KEY_TEXT.."+"..L['Left-Click']..'>|r', "|cFFFFFFFF"..L['Open Artifact'].."|r")
   end
   self:SkinFrame(tooltip,"TalentTooltip")
   tooltip:Show()
